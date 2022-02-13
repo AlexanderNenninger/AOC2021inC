@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "io.h"
 
 // Read file into string.
 char *readfile(char *filename)
@@ -33,7 +32,7 @@ char *readfile(char *filename)
 }
 
 // Count blocks in string separated by `sep`, e.g. '\n'
-int count_items(char *str, char sep)
+int count_items(const char *str, char sep)
 {
     int lines = 0;
     for (int i = 0; str[i] != '\0'; i++)
@@ -47,7 +46,7 @@ int count_items(char *str, char sep)
 }
 
 // Greadily parse numbers from string.
-int parse_ints(char *str, int *ibuf, char sep)
+int parse_ints(const char *str, int *ibuf, char sep)
 {
     int len = count_items(str, sep);
 

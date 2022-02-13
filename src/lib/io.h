@@ -7,9 +7,9 @@
 char *readfile(char *filename);
 
 // Count blocks in string separated by `sep`, e.g. '\n'
-int count_items(char *str, char sep);
+int count_items(const char *str, char sep);
 
 // Greadily parse numbers from string.
-int parse_ints(char *str, int *ibuf, char sep);
+int parse_ints(const char *str, int *ibuf, char sep);
 
 #endif // IO_H_

@@ -4,7 +4,7 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "make",
+            "command": "/usr/bin/make",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -14,13 +14,23 @@
             ]
         },
         {
-            "label": "Test",
+            "label": "test day 01",
             "type": "shell",
             "group": {
                 "kind": "test",
                 "isDefault": true
             },
             "command": "./target/day01 ./data/day01/test.txt",
+            "problemMatcher": []
+        },
+        {
+            "label": "test day 05",
+            "type": "shell",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "command": "./target/day05 ./data/day05/test.txt",
             "problemMatcher": []
         }
     ]
