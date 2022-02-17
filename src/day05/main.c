@@ -7,6 +7,8 @@
 #include "../lib/utils.h"
 #include "../lib/hashmap/hashmap.h"
 
+#define UNUSED(x) (void)(x)
+
 extern int errno;
 
 // We need to store points in a hashmap to add up lines.
@@ -14,27 +16,43 @@ typedef struct Point
 {
     int x;
     int y;
-    int *count;
+    int count;
 } Point_t;
 
 int point_compare(const void *a, const void *b, void *pdata)
 {
+    UNUSED(pdata);
     const Point_t *pa = a;
     const Point_t *pb = b;
-    return pa->x == pb->x && pa->y == pb->y && pa->count == pb->count - 1;
+    return (pa->x == pb->x && pa->y == pb->y) - 1;
 }
 
 bool point_iter(const void *item, void *pdata)
 {
-    Point_t *point = item;
-    printf("(%d, %d, %d)\n", point->x, point->y, *(point->count));
+    UNUSED(pdata);
+    Point_t *point = (Point_t *)item;
+    printf("(%d, %d):  %d\n", point->x, point->y, point->count);
     return true;
 }
 
-uint64_t point_hash(const void *item, uint64_t seed0, uint64_t seed1)
+struct coords
+{
+    int x;
+    int y;
+};
+
+uint64_t
+point_hash(const void *item, uint64_t seed0, uint64_t seed1)
 {
     const Point_t *point = item;
-    return hashmap_sip(point, sizeof(Point_t), seed0, seed1);
+
+    struct coords c =
+        {
+            .x = point->x,
+            .y = point->x,
+        };
+
+    return hashmap_sip(&c, sizeof(struct coords), seed0, seed1);
 }
 
 typedef struct Line
@@ -74,14 +92,14 @@ Line_t parse_line(const char *str, char **endptr)
     a.y = strtol(str, endptr, 10);
     str = *endptr + 4;
 
-    a.count = NULL;
+    a.count = 1;
 
     b.x = strtol(str, endptr, 10);
     str = *endptr + 1;
 
     b.y = strtol(str, endptr, 10);
 
-    b.count = NULL;
+    b.count = 1;
 
     l.a = a;
     l.b = b;
@@ -117,6 +135,134 @@ int parse_lines(const char *lptr, Line_t *lbuf, char sep)
     return i + 1;
 }
 
+void add_or_inc(struct hashmap *map, Point_t *point)
+{
+    Point_t *entry = hashmap_get(map, point);
+    if (entry == NULL)
+    {
+        hashmap_set(map, point);
+    }
+    else
+    {
+        entry->count += 1;
+    }
+}
+
+void add_line(struct hashmap *map, Line_t *line)
+{
+    Point_t p = line->a;
+
+    if (is_horizontal(line))
+    {
+        add_or_inc(map, &p);
+        int inc = sign(line->b.x - line->a.x);
+        while (p.x != line->b.x)
+        {
+            p.x += inc;
+            add_or_inc(map, &p);
+        }
+    }
+    else if (is_vertical(line))
+    {
+        add_or_inc(map, &p);
+        int inc = sign(line->b.y - line->a.y);
+        while (p.y != line->b.y)
+        {
+            p.y += inc;
+            add_or_inc(map, &p);
+        }
+    }
+}
+
+void add_lines(struct hashmap *map, Line_t *lines, int n_lines)
+{
+    for (int i = 0; i < n_lines; i++)
+    {
+        add_line(map, lines);
+        lines += 1;
+    }
+}
+
+void add_line_diagonal(struct hashmap *map, Line_t *line)
+{
+    Point_t p = line->a;
+    add_or_inc(map, &p);
+
+    int incx = sign(line->b.x - line->a.x);
+    int incy = sign(line->b.y - line->a.y);
+    while (p.x != line->b.x || p.y != line->b.y)
+    {
+        p.x += incx;
+        p.y += incy;
+        add_or_inc(map, &p);
+    }
+}
+
+void add_lines_diagonal(struct hashmap *map, Line_t *lines, int n_lines)
+{
+    for (int i = 0; i < n_lines; i++)
+    {
+        add_line_diagonal(map, lines);
+        lines += 1;
+    }
+}
+
+bool count_cover(const void *item, void *pdata)
+{
+    int *count = (int *)pdata;
+    Point_t *point = (Point_t *)item;
+    if (point->count >= 2)
+    {
+        *count += 1;
+    }
+    return true;
+}
+
+bool idx_iter(const void *item, void *pdata)
+{
+    int *maxidx = (int *)pdata;
+    Point_t *point = (Point_t *)item;
+
+    *maxidx = point->x > *maxidx ? point->x : *maxidx;
+    *maxidx = point->y > *maxidx ? point->y : *maxidx;
+    return true;
+}
+
+int max_idx(struct hashmap *map)
+{
+    int maxidx = 0;
+    hashmap_scan(map, idx_iter, (void *)&maxidx);
+    return maxidx;
+}
+
+void print_grid(struct hashmap *map)
+{
+    int maxidx = max_idx(map);
+    for (int i = 0; i <= maxidx; i++)
+    {
+        for (int j = 0; j <= maxidx; j++)
+        {
+            Point_t q = {
+                .x = j,
+                .y = i,
+                .count = 0,
+            };
+
+            Point_t *p = hashmap_get(map, &q);
+            if (p == NULL)
+            {
+                printf(".");
+            }
+            else
+            {
+                printf("%d", p->count);
+            }
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 2)
@@ -150,21 +296,33 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    printf("Loaded data!\n");
+    printf("--- Part One ---\n");
 
     struct hashmap *map = hashmap_new(sizeof(Point_t), 0, 0, 0, point_hash, point_compare, NULL, NULL);
 
-    printf("Initialized Hashmap!\n");
+    add_lines(map, lines, n_lines);
 
-    int counts[1] = {0};
-    hashmap_set(map, &(Point_t){.x = 0, .y = 1, .count = counts[0]});
-    Point_t *point = hashmap_get(map, &(Point_t){.x = 0, .y = 1, .count = counts[0]});
+    print_grid(map);
 
-    printf("(%d, %d, %d)\n", point->x, point->y, *(point->count));
-
-    printf("\n-- iterate over all points --\n");
-    hashmap_scan(map, point_iter, NULL);
+    int count = 0;
+    hashmap_scan(map, count_cover, &count);
+    printf("Number of covers >= 2: %d\n", count);
 
     hashmap_free(map);
+
+    printf("--- Part Tow ---\n");
+
+    struct hashmap *map_diag = hashmap_new(sizeof(Point_t), 0, 0, 0, point_hash, point_compare, NULL, NULL);
+
+    add_lines_diagonal(map_diag, lines, n_lines);
+
+    print_grid(map_diag);
+
+    int count_diag = 0;
+    hashmap_scan(map_diag, count_cover, &count_diag);
+    printf("Number of covers >= 2: %d\n", count_diag);
+
+    hashmap_free(map_diag);
+
     return 0;
 }
