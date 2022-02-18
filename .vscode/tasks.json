@@ -32,6 +32,16 @@
             },
             "command": "./target/day05 ./data/day05/test.txt",
             "problemMatcher": []
+        },
+        {
+            "label": "test day 25",
+            "type": "shell",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "command": "./target/day25 ./data/day25/test.txt",
+            "problemMatcher": []
         }
     ]
 }

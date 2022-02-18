@@ -12,4 +12,5 @@ int count_items(const char *str, char sep);
 // Greadily parse numbers from string.
 int parse_ints(const char *str, int *ibuf, char sep);
 
+int line_len(const char *c);
 #endif // IO_H_

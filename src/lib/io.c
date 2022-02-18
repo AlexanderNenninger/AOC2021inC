@@ -67,3 +67,14 @@ int parse_ints(const char *str, int *ibuf, char sep)
 
     return i;
 }
+
+// Calculate the lenght of a line
+int line_len(const char *c)
+{
+    int i = 0;
+    while (c[i] != '\n' & c[i] != '\r')
+    {
+        i++;
+    }
+    return i;
+}
