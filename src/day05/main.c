@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
 
     add_lines(map, lines, n_lines);
 
-    print_grid(map);
+    // print_grid(map);
 
     int count = 0;
     hashmap_scan(map, count_cover, &count);
@@ -316,13 +316,13 @@ int main(int argc, char *argv[])
 
     add_lines_diagonal(map_diag, lines, n_lines);
 
-    print_grid(map_diag);
+    // print_grid(map_diag);
 
     int count_diag = 0;
     hashmap_scan(map_diag, count_cover, &count_diag);
     printf("Number of covers >= 2: %d\n", count_diag);
 
     hashmap_free(map_diag);
-
+    free(lines);
     return 0;
 }

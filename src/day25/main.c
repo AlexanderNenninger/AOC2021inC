@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
     free(data);
 
     printf("Initial state:\n");
-    board_print(&b0);
+    // board_print(&b0);
 
     board_t b1 = board_like(&b0);
 
@@ -264,10 +264,11 @@ int main(int argc, char *argv[])
     {
         moving = board_step(bptr0, bptr1);
         nsteps++;
-        printf("\nAfter %d steps:\n", nsteps);
-        board_print(bptr0);
-
     } while (moving);
 
+    board_print(bptr0);
+    printf("\nSteps: %d\n", nsteps);
+    board_destroy(b0);
+    board_destroy(b1);
     return 0;
 }
